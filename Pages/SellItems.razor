@@ -1,0 +1,319 @@
+﻿@page "/SellItems"
+@using Sales.ViewModel;
+@using Microsoft.AspNetCore.Components;
+@using Sales.Models;
+@using Sales.Data;
+@using System.Collections;
+@using Microsoft.EntityFrameworkCore;
+@using Syncfusion.Blazor.Data;
+@using Microsoft.AspNetCore.Hosting;
+@inject SalesPurchasesContext context;
+@inject UserManagement user;
+@inject IJSRuntime jsRuntime;
+
+@*<style>
+    /*Resize dialog Edit*/
+    .e-dialog.e-control.e-popup {
+        max-height: 30%;
+        max-width: 30%;
+        min-width: 20%;
+        min-height: 20%;
+    }
+    
+</style>*@
+
+<div class="row">
+    <div class="col-lg-4 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+<div class="headerband"><div class="headerbandimg"></div>Sales</div>
+<SfGrid @ref="@SalesGrid" TValue="ViewSale" AllowResizing="true" AllowSorting="true" AllowPaging="true" Toolbar="@(new List<string>() { "Search", "Add", "Edit","Update","Delete","Cancel" })" AllowFiltering="true" Height="315">
+    <GridPageSettings PageSize="7"></GridPageSettings>
+    <GridSelectionSettings CheckboxOnly="true" PersistSelection="true" Type="SelectionType.Multiple"></GridSelectionSettings>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+    <SfDataManager AdaptorInstance="@typeof(SalesRoutineAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <GridEditSettings AllowAdding="true" AllowDeleting="true" AllowEditing="true" ShowConfirmDialog="false" Mode="EditMode.Dialog" Dialog="DialogParams">
+        <HeaderTemplate>
+            @{
+                var text = GetHeader((context as ViewSale));
+                <div class="headerbandimg" /><span>@text</span>
+            }
+        </HeaderTemplate>
+        <Template>
+            @{
+                var sal = (context as ViewSale);
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <SfDropDownList ID="Product" TItem="AStock" @bind-Value="@(sal.Product)" TValue="string" DataSource="@products" FloatLabelType="FloatLabelType.Always" Placeholder="Product">
+                            <DropDownListFieldSettings Value="StockProductId" Text="StockProductName"></DropDownListFieldSettings>
+                        </SfDropDownList>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <SfNumericTextBox ID="QuantityAvailable" @bind-Value="@(sal.QuantityAvailable)" Placeholder="Quantity Available" Format="n0" FloatLabelType="FloatLabelType.Always" Enabled="true"></SfNumericTextBox>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <SfNumericTextBox ID="Quantity" @bind-Value="@(sal.Quantity)" Placeholder="Sale Quantity" Format="n0" FloatLabelType="FloatLabelType.Always" Enabled="true"></SfNumericTextBox>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <SfNumericTextBox ID="QuantityAvailable" @bind-Value="@(sal.QuantityAvailable)" Placeholder="Remaining Quantity" Format="n0" FloatLabelType="FloatLabelType.Always" Enabled="true"></SfNumericTextBox>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <SfNumericTextBox ID="ProductSellingPrice" @bind-Value="@(sal.ProductSellingPrice)" Placeholder="Selling Price (For Each)" Format="n0" FloatLabelType="FloatLabelType.Always" Enabled="true"></SfNumericTextBox>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <SfNumericTextBox ID="Amount" @bind-Value="@(sal.Amount)" Placeholder="Total Amount" Format="n0" FloatLabelType="FloatLabelType.Always" Enabled="true"></SfNumericTextBox>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <SfNumericTextBox ID="MoneyReceived" @bind-Value="@(sal.MoneyReceived)" Placeholder="Amount Received" Format="n0" FloatLabelType="FloatLabelType.Always" Enabled="true"></SfNumericTextBox>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <SfNumericTextBox ID="BalanceReturned" @bind-Value="@(sal.BalanceReturned)" Placeholder="Balance" Format="n0" FloatLabelType="FloatLabelType.Always" Enabled="true"></SfNumericTextBox>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-12">
+                        <SfDropDownList ID="UnitId" TItem="AUnit" @bind-Value="@(sal.UnitId)" TValue="string" DataSource="@units" FloatLabelType="FloatLabelType.Always" Placeholder="Unit Measure">
+                            <DropDownListFieldSettings Value="UnitId" Text="UnitName"></DropDownListFieldSettings>
+                        </SfDropDownList>
+                    </div>
+                </div>
+            }
+        </Template>
+        @*<FooterTemplate>
+                <button>Confirm</button>
+                <button>Cancel</button>
+            </FooterTemplate>*@
+    </GridEditSettings>
+    <GridEvents TValue="ViewSale"></GridEvents>
+    <GridColumns>
+        <GridColumn Type="ColumnType.CheckBox" AllowFiltering="false" AllowSorting="false" Width="60"></GridColumn>
+        <GridColumn Field="SalesId" HeaderText="Sales Id" IsPrimaryKey="true" Visible="false"></GridColumn>
+        @*<GridColumn Field="ProductName" HeaderText="Product Name"></GridColumn>
+        <GridColumn Field="Quantity" HeaderText="Quantity"></GridColumn>
+        <GridColumn Field="UnitPrice" HeaderText="Unit Price"></GridColumn>
+        <GridColumn Field="UnitName" HeaderText="Measurement Unit"></GridColumn>
+        <GridColumn Field="Amount" HeaderText="Amount"></GridColumn>*@
+    </GridColumns>
+</SfGrid>
+
+@code {
+    #region Toasters
+    public static string ToastContent { get; set; }
+    SfToast ToastObj;
+    SfToast DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+{
+        new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+        new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+        new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+        new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+    };
+    #endregion Toasters
+
+    #region DropDowns
+    public static List<AStock> products { get; set; }
+    public static List<AUnit> units { get; set; }
+    #endregion DropDowns
+
+    protected override async Task OnInitializedAsync()
+    {
+        products = context.AStocks.ToList();
+        units = context.AUnits.ToList();
+    }
+    public SfGrid<ViewSale> SalesGrid;
+    public SfTextBox PaymentMethodId;
+    public SfTextBox PaymentMethod;
+    public SfTextBox Remarks;
+
+    public void Refresh()
+    {
+        SalesGrid.Refresh();
+    }
+
+    private Boolean Check = false;
+    private DialogSettings DialogParams = new DialogSettings { MinHeight = "400px", Width = "550px" };
+
+    // Customise dialogtemplate header
+    public IWebHostEnvironment hostingEnv;
+    public string Header { get; set; }
+    public string ButtonText { get; set; }
+    public string GetHeader(ViewSale Value)
+    {
+        if (Value.SalesId == null)
+        {
+            ButtonText = "Insert";
+            return "Add a new Sale";
+        }
+        else
+        {
+            ButtonText = "Save Changes";
+            return "Edit Sale Details for " + Value.Product;
+        }
+    }
+    public class SalesRoutineAdapter : DataAdaptor
+    {
+        String result = string.Empty;
+        public string message = string.Empty;
+        public IJSRuntime jsRuntime;
+        public UserManagement user;
+        public IToastService toastService;
+
+        public SalesRoutineAdapter(IJSRuntime jSRuntime, UserManagement _user)
+        {
+            jsRuntime = jSRuntime;
+            user = _user;
+        }
+
+        ViewModel.AlertMessageType messageType = ViewModel.AlertMessageType.Error;
+
+        public override object Read(DataManagerRequest dm, string key = null)
+        {
+            using (var _context = new SalesPurchasesContext())
+            {
+                var _data = _context.ViewSales.OrderByDescending(a => a.SellingDate).ToList();
+                IEnumerable DataSource = _data;
+                //int count = _data.Count;
+
+                if (dm.Search != null && dm.Search.Count > 0)
+                {
+                    // Searching
+                    DataSource = DataOperations.PerformSearching(DataSource, dm.Search);
+                }
+                if (dm.Sorted != null && dm.Sorted.Count > 0)
+                {
+                    // Sorting
+                    DataSource = DataOperations.PerformSorting(DataSource, dm.Sorted);
+                }
+                if (dm.Where != null && dm.Where.Count > 0)
+                {
+                    // Filtering
+                    DataSource = DataOperations.PerformFiltering(DataSource, dm.Where, dm.Where[0].Operator);
+                }
+                int count = DataSource.Cast<ViewSale>().Count();
+                if (dm.Skip != 0)
+                {
+                    //Paging
+                    DataSource = DataOperations.PerformSkip(DataSource, dm.Skip);
+                }
+                if (dm.Take != 0)
+                {
+                    DataSource = DataOperations.PerformTake(DataSource, dm.Take);
+                }
+
+                return dm.RequiresCounts ? new DataResult() { Result = DataSource, Count = count } : (object)DataSource;
+            }
+        }
+        public override object Update(DataManager dataManager, object value, string keyField, string key)
+        {
+            using (var _context = new SalesPurchasesContext())
+            {
+                var val = (value as ViewSale);
+                var exist = _context.Sales.FirstOrDefault(o => o.SalesId == val.SalesId);
+                if (exist != null)
+                {
+                    exist.Product = val.Product;
+                    exist.Quantity = val.Quantity;
+                    //exist.UnitPrice = val.UnitPrice;
+                    //exist.Amount = val.Quantity * val.UnitPrice;
+                    exist.UnitId = val.UnitId;
+                    //exist.SoldBy = user.GetStaffName();
+                    //exist.SellingDate = DateTime.Now;
+                    _context.Entry(exist).State = EntityState.Modified;
+                    _context.SaveChanges();
+
+                    SalesLog sallog = new SalesLog();
+                    //Save Into Log Table
+                    sallog.SalesLogId = Guid.NewGuid().ToString();
+                    sallog.SalesId = val.SalesId;
+                    sallog.Product = val.Product;
+                    //sallog.Quantity = val.Quantity;
+                    //sallog.UnitPrice = val.UnitPrice;
+                    //sallog.Amount = val.Quantity * val.UnitPrice;
+                    sallog.UnitId = val.UnitId;
+                    sallog.UpdatedBy = user.GetStaffName();
+                    sallog.UpdatedDate = DateTime.Now;
+
+                    _context.SalesLogs.Add(sallog);
+                    _context.SaveChanges();
+
+                }
+                return value;
+            }
+        }
+        public override object Remove(DataManager dataManager, object value, string keyField, string key)
+        {
+            using (var _context = new SalesPurchasesContext())
+            {
+
+                //var delData = data.GetAllOrders().Where(x => x.MemberId == (string)value).FirstOrDefault();
+                var delData = _context.Sales.Where(x => x.SalesId == (string)value).FirstOrDefault();
+                _context.Sales.Remove(delData);
+                _context.SaveChanges();
+
+                //data.DeleteOrder((int)value);
+                return delData;
+            }
+
+        }
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            using (var _context = new SalesPurchasesContext())
+            {
+                var val = (value as ViewSale);
+                Sale reg = new Sale();
+                SalesLog reglog = new SalesLog();
+                try
+                {
+                    reg.SalesId = Guid.NewGuid().ToString();
+                    reg.Product = val.Product;
+                    reg.Quantity = val.Quantity;
+                    //reg.UnitPrice = val.UnitPrice;
+                    //reg.Amount = val.Quantity * val.UnitPrice;
+                    reg.UnitId = val.UnitId;
+                    reg.SoldBy = user.GetStaffName();
+                    reg.SellingDate = DateTime.Now;
+
+                    //Save Into Log Table
+                    reglog.SalesLogId = Guid.NewGuid().ToString();
+                    reglog.SalesId = reg.SalesId;
+                    reglog.Product = val.Product;
+                    //reglog.Quantity = val.Quantity;
+                    //reglog.UnitPrice = val.UnitPrice;
+                    //reglog.Amount = val.Quantity * val.UnitPrice;
+                    reglog.UnitId = val.UnitId;
+                    reglog.SoldBy = user.GetStaffName();
+                    reglog.SellingDate = DateTime.Now;
+
+                    try
+                    {
+                        _context.Sales.Add(reg);
+                        _context.SalesLogs.Add(reglog);
+                        await _context.SaveChangesAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+            }
+
+            return value;
+        }
+
+    }
+}

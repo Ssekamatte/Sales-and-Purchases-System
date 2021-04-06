@@ -1,0 +1,30 @@
+﻿@using Sales.Data
+@inject UserManagement userManagement;
+<AuthorizeView>
+    <Authorized>
+        <SfMenu Items="@MenuItems"></SfMenu>
+    </Authorized>
+    <NotAuthorized>
+        @*<a href="Identity/Account/Register">Register</a>*@
+        @*<a href="Identity/Account/Login">Log in</a>*@
+    </NotAuthorized>
+</AuthorizeView>
+@code{
+    public List<MenuItem> MenuItems;
+
+    protected override async Task OnInitializedAsync()
+    {
+        MenuItems = new List<MenuItem>
+    {
+                new MenuItem
+                {
+                    Text = "Hello "+ userManagement.GetStaffName(), Id="LoginMenu", Items = new List<MenuItem>
+                {
+                               new MenuItem{ Text = "Change Password", Url="/Account/Register"},
+                               new MenuItem{ Separator=true},
+                               new MenuItem{ Text = "Log Out", Url="/"},
+                            }
+                    }
+        };
+    }
+}

@@ -1,0 +1,185 @@
+﻿@page "/Account/Register";
+@using Microsoft.EntityFrameworkCore;
+@using Microsoft.AspNetCore.Identity;
+@using Microsoft.AspNetCore.Identity.UI.Services;
+@using Sales.Models;
+@using Microsoft.Extensions.Logging;
+@using Sales.Data;
+@using System.IO;
+@inject SalesPurchasesContext _context;
+@inject SignInManager<IdentityUser> _signInManager;
+@inject UserManager<IdentityUser> _userManager;
+@inject IEmailSender _emailSender;
+@inject ILogger<Register> _logger;
+@inject NavigationManager Navigation;
+@inject UserManagement userManagement;
+
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="width: 100%; background-color: black; color: white; font-family: Cambria; padding: 5px; font: bolder;"> <stong> Register </stong></li>
+</ol>
+<div class="row">
+    <div class="col-lg-12 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+
+<EditForm Model="@InputModel" OnValidSubmit="@RegisterUser">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <SfDropDownList ID="StaffId" @bind-Value="@InputModel.StaffId" Enabled="true" TItem="AStaff" TValue="string" DataSource="@Staff" Placeholder="Staff" FloatLabelType="FloatLabelType.Always">
+                    <DropDownListEvents TItem="AStaff" TValue="string" ValueChange="OnStaffChange"></DropDownListEvents>
+                    <DropDownListFieldSettings Value="@nameof(AStaff.StaffId)" Text="@nameof(AStaff.StaffName)"></DropDownListFieldSettings>
+                </SfDropDownList>
+            </div>
+            <div class="form-group">
+                <SfTextBox ID="UserName" @bind-Value="InputModel.UserName" Placeholder="User Name" FloatLabelType="FloatLabelType.Always" />
+            </div>
+            <div class="form-group">
+                <SfTextBox ID="Email" @bind-Value="InputModel.Email" Placeholder="Email" FloatLabelType="FloatLabelType.Always" />
+            </div>
+            <div class="form-group">
+                <SfTextBox ID="PhoneNumber" @bind-Value="InputModel.PhoneNumber" Placeholder="Phone Number" FloatLabelType="FloatLabelType.Always" />
+            </div>
+            <div class="form-group">
+                <SfDropDownList ID="UserRole" @bind-Value="@InputModel.UserRole" Enabled="true" TItem="AspNetRole" TValue="string" DataSource="@UserRoles" Placeholder="User Role" FloatLabelType="FloatLabelType.Always">
+                    <DropDownListFieldSettings Value="@nameof(AspNetRole.Name)" Text="@nameof(AspNetRole.Name)"></DropDownListFieldSettings>
+                </SfDropDownList>
+            </div>
+            <div class="form-group">
+                <SfTextBox ID="Password" @bind-Value="InputModel.Password" Placeholder="Password" FloatLabelType="FloatLabelType.Always" />
+            </div>
+            <div class="form-group">
+                <SfTextBox ID="ConfirmPassword" @bind-Value="InputModel.ConfirmPassword" Placeholder="Confirm Password" FloatLabelType="FloatLabelType.Always" />
+            </div>
+            <div class="form-group">
+                <button class="btn btn-primary btn-lg" style="float:right" type="submit">Register</button>
+            </div>
+        </div>
+        <div class="col-md-3"></div>
+    </div>
+</EditForm>
+
+@code {
+    #region Toasters
+    public static string ToastContent { get; set; }
+    SfToast ToastObj;
+    SfToast DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+{
+        new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+        new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+        new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+        new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+    };
+    #endregion Toasters
+    private RegisterViewModel InputModel = new RegisterViewModel();
+    private List<AStaff> Staff { get; set; }
+    private string StaffName { get; set; }
+    private List<AspNetRole> UserRoles { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (!userManagement.IsSignedIn())
+            {
+                Navigation.NavigateTo("Account/Login", true);
+            }
+            Staff = _context.AStaffs.ToList();
+            UserRoles = _context.AspNetRoles.ToList();
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.Show(new ToastModel { Title = "Error!", Content = ex.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+    }
+
+    public async Task RegisterUser()
+    {
+        try
+        {
+            var user = new IdentityUser { UserName = InputModel.UserName, Email = InputModel.Email, PhoneNumber = InputModel.PhoneNumber, LockoutEnabled = false };
+            var result = await _userManager.CreateAsync(user, InputModel.Password);
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("User created a new account with password.");
+                using (var dbContext = new SalesPurchasesContext())
+                {
+                    var exist = dbContext.AspNetUsers.FirstOrDefault(o => o.Id == user.Id);
+                    if (exist != null)
+                    {
+                        exist.StaffId = InputModel.StaffId;
+                        exist.EmailConfirmed = true;
+                        exist.LockoutEnabled = false;
+                        exist.PhoneNumberConfirmed = true;
+                        dbContext.Entry(exist).State = EntityState.Modified;
+                        dbContext.SaveChanges();
+                    }
+                }
+                var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+
+                await _userManager.ConfirmEmailAsync(user, code);
+
+                var _result = await _userManager.AddToRoleAsync(user, InputModel.UserRole);
+
+                if (_result.Succeeded)
+                {
+                    await ToastObj.Show(new ToastModel { Title = "Success!", Content = StaffName + " has been successfully registered!", CssClass = "e-toast-success", Icon = "e-success toast-icons" });
+                }
+                else
+                {
+                    string _error = string.Empty;
+                    foreach (var error in _result.Errors)
+                    {
+                        // ModelState.AddModelError(string.Empty, error.Description);
+                        _error += error.Description + ",";
+                    }
+                    await ToastObj.Show(new ToastModel { Title = "Error!", Content = _error, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+                }
+
+            }
+            else
+            {
+                string _error = string.Empty;
+                foreach (var error in result.Errors)
+                {
+                    // ModelState.AddModelError(string.Empty, error.Description);
+                    _error += error.Description + ",";
+                }
+                await ToastObj.Show(new ToastModel { Title = "Error!", Content = _error, CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+            }
+        }
+        catch (Exception ex)
+        {
+            await ToastObj.Show(new ToastModel { Title = "Error!", Content = ex.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+
+    }
+
+    public void OnStaffChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, AStaff> args)
+    {
+        try
+        {
+            var data = args.ItemData;
+            //int val = Convert.ToInt32(args.Value);
+            InputModel.PhoneNumber = data.Phone;
+            InputModel.Email = data.Email;
+            StaffName = data.StaffName;
+        }
+        catch (Exception ex)
+        {
+            ToastObj.Show(new ToastModel { Title = "Error!", Content = ex.ToString(), CssClass = "e-toast-danger", Icon = "e-error toast-icons" });
+        }
+
+    }
+
+}
+

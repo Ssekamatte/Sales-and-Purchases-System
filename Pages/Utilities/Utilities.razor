@@ -1,0 +1,862 @@
+﻿@page "/Utilities/Utilities"
+@using Sales.ViewModel;
+@using Microsoft.AspNetCore.Components;
+@using Sales.Models;
+@using Sales.Data;
+@using System.Collections;
+@using Microsoft.EntityFrameworkCore;
+@using Syncfusion.Blazor.Data;
+@inject SalesPurchasesContext context;
+@inject UserManagement user;
+@inject IJSRuntime jsRuntime;
+
+<ol class="breadcrumb" style="margin-top:5px;">
+    <li class="breadcrumb-item active" style="width: 100%; background-color: black; color: white; font-family: Cambria; padding: 5px; font: bolder;"> <strong>Utilities</strong></li>
+</ol>
+
+<div class="row">
+    <div class="col-lg-4 control-section">
+        <SfToast @ref="ToastObj" ID="toast_type">
+            <ToastPosition X="@ToastPosition"></ToastPosition>
+        </SfToast>
+    </div>
+</div>
+
+<SfTab ID="Ej2Tab1" Width="100%">
+    <TabItems>
+        @*Staff*@
+        <TabItem>
+            <ChildContent>
+                <TabHeader Text="Staff"></TabHeader>
+            </ChildContent>
+            <ContentTemplate>
+                <div class="headerband"><div class="headerbandimg"></div>Staff Members</div>
+                <SfGrid @ref="StaffGrid" TValue="AStaff" Query="@StaffQuery" GridLines="GridLine.Both"
+                        Toolbar="@(new List<string>() { "Add", "Edit", "Delete", "Update", "Cancel", "ColumnChooser" })" AllowPaging="false" Width="auto" Height="420"
+                        ShowColumnChooser="true" EnableAltRow="true" AllowFiltering="true" AllowTextWrap="true"
+                        EnableHover="true" AllowSorting="true">
+                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                    <SfDataManager AdaptorInstance="@typeof(StaffRoutineAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+                    <GridSelectionSettings Mode="Syncfusion.Blazor.Grids.SelectionMode.Both"></GridSelectionSettings>
+                    <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" ShowConfirmDialog="false" Mode="EditMode.Dialog" Dialog="DialogParams">
+                        <HeaderTemplate>
+                            @{
+                                var text = GetStaffHeader((context as AStaff));
+                                <div class="headerbandimg" /><span>@text</span>
+                            }
+                        </HeaderTemplate>
+                        <Template>
+                            @{
+                                var Mem = (context as AStaff);
+
+                                <SfAccordion ExpandMode="ExpandMode.Single">
+                                    <AccordionItems>
+                                        <AccordionItem Expanded="true">
+                                            @*Expand One Accordion At A Time*@
+                                            <HeaderTemplate>General Information</HeaderTemplate>
+                                            <ContentTemplate>
+                                                <div class="form-row">
+                                                    <div class="form-group col-md-4">
+                                                        <SfTextBox ID="StaffName" @bind-Value="@(Mem.StaffName)" @ref="StaffName" Placeholder="Staff Name" FloatLabelType="FloatLabelType.Always"></SfTextBox>
+                                                    </div>
+
+                                                    <div class="form-group col-md-4">
+                                                        <SfDropDownList ID="StaffRoleId" TItem="AstaffRole" @bind-Value="@(Mem.StaffRoleId)" TValue="string" DataSource="@staffroles" FloatLabelType="FloatLabelType.Always" Placeholder="Staff Role">
+                                                            <DropDownListFieldSettings Value="StaffRoleId" Text="StaffRole"></DropDownListFieldSettings>
+                                                        </SfDropDownList>
+                                                    </div>
+                                                    <div class="form-group col-md-4">
+                                                        <SfDropDownList ID="GenderId" TItem="Agender" @bind-Value="@(Mem.GenderId)" TValue="int?" DataSource="@genders" Placeholder="Gender" FloatLabelType="FloatLabelType.Always">
+                                                            <DropDownListFieldSettings Value="GenderId" Text="GenderName"></DropDownListFieldSettings>
+                                                        </SfDropDownList>
+                                                    </div>
+                                                </div>
+                                                <div class="form-row">
+                                                    <div class="form-group col-md-4">
+                                                        <div class="e-float-input e-control-wrapper">
+                                                            <SfDatePicker ID="Dob" @bind-Value="@Mem.Dob" Placeholder="Date of Birth" Format="dd/MM/yyyy" Enabled="true" FloatLabelType="FloatLabelType.Always" Max='@MaxDate'>
+                                                            </SfDatePicker>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group col-md-4">
+                                                        <div class="e-float-input e-control-wrapper">
+                                                            <SfTextBox ID="NinNumber" @bind-Value="@Mem.NinNumber" Placeholder="National ID No" Enabled="true" FloatLabelType="FloatLabelType.Always">
+                                                            </SfTextBox>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </ContentTemplate>
+                                        </AccordionItem>
+
+                                        <AccordionItem Expanded="false">
+                                            <HeaderTemplate>Contact Details</HeaderTemplate>
+                                            <ContentTemplate>
+                                                <div class="form-row">
+                                                    <div class="form-group col-md-4">
+                                                        <SfTextBox ID="Phone" @bind-Value="@Mem.Phone" Placeholder="Phone No" Enabled="true" FloatLabelType="FloatLabelType.Always">
+                                                        </SfTextBox>
+                                                    </div>
+
+                                                    <div class="form-group col-md-4">
+                                                        <SfTextBox ID="Email" @bind-Value="@Mem.Email" Placeholder="Email Address" Enabled="true" FloatLabelType="FloatLabelType.Always">
+                                                        </SfTextBox>
+                                                    </div>
+                                                    <div class="form-group col-md-4">
+                                                        <SfDropDownList ID="NationalityId" TItem="ACountry" @bind-Value="@(Mem.NationalityId)" TValue="string" DataSource="@countries" Placeholder="Nationality" FloatLabelType="FloatLabelType.Always">
+                                                            <DropDownListFieldSettings Value="CountryCode" Text="CountryName"></DropDownListFieldSettings>
+                                                        </SfDropDownList>
+                                                    </div>
+                                                </div>
+                                            </ContentTemplate>
+                                        </AccordionItem>
+                                    </AccordionItems>
+                                </SfAccordion>
+                            }
+                        </Template>
+                    </GridEditSettings>
+                    <GridEvents TValue="AStaff"></GridEvents>
+                    <GridColumns>
+                        <GridColumn Field=@nameof(AStaff.StaffId) Visible="false" IsPrimaryKey="true" AllowEditing="false" ShowInColumnChooser="false" HeaderText="Staff Code" ValidationRules="@(new ValidationRules { Required = true })" Width="200"></GridColumn>
+                        <GridColumn Field=@nameof(AStaff.StaffName) ShowInColumnChooser="false" AllowEditing="true" HeaderText="Staff Name" ValidationRules="@(new ValidationRules { Required = true })" Width="280"></GridColumn>
+                        <GridColumn Field=@nameof(AStaff.StaffRoleId) HeaderText="Staff Role" TextAlign="TextAlign.Left" Width="150" ForeignKeyField="@nameof(AstaffRole.StaffRoleId)" ForeignKeyValue="@nameof(AstaffRole.StaffRole)" DataSource="@staffroles"></GridColumn>
+                        <GridColumn Field=@nameof(AStaff.GenderId) Visible="false" HeaderText="Gender" TextAlign="TextAlign.Left" Width="150" ForeignKeyField="@nameof(Agender.GenderId)" ForeignKeyValue="@nameof(Agender.GenderName)" DataSource="@genders"></GridColumn>
+                        <GridColumn Field=@nameof(AStaff.Email) ShowInColumnChooser="false" AllowEditing="true" HeaderText="Email" ValidationRules="@(new ValidationRules { Required = true })" Width="280"></GridColumn>
+                        <GridColumn Field=@nameof(AStaff.Dob) Visible="false" ShowInColumnChooser="false" AllowEditing="true" HeaderText="Date of Birth" ValidationRules="@(new ValidationRules { Required = true })" Width="280" EditType="EditType.DatePickerEdit" Format="d"></GridColumn>
+                        <GridColumn Field=@nameof(AStaff.NationalityId) Visible="false" HeaderText="Nationality" TextAlign="TextAlign.Left" Width="150" ForeignKeyField="@nameof(ACountry.CountryCode)" ForeignKeyValue="@nameof(ACountry.CountryName)" DataSource="@countries"></GridColumn>
+                        <GridColumn Field=@nameof(AStaff.Phone) ShowInColumnChooser="false" AllowEditing="true" HeaderText="Phone Number" ValidationRules="@(new ValidationRules { Required = true })" Width="280"></GridColumn>
+                    </GridColumns>
+                </SfGrid>
+            </ContentTemplate>
+        </TabItem>
+        @*Products*@
+        <TabItem>
+            <ChildContent>
+                <TabHeader Text="Products"></TabHeader>
+            </ChildContent>
+            <ContentTemplate>
+                @{
+                    <SfGrid @ref="StockProductGrid" TValue="AStock" Query="@StockQuery" GridLines="GridLine.Both"
+                            Toolbar="@(new List<string>() { "Add", "Edit", "Delete", "Update", "Cancel", "ColumnChooser" })" AllowPaging="false" Width="auto" Height="420"
+                            ShowColumnChooser="true" EnableAltRow="true" AllowFiltering="true" AllowTextWrap="true"
+                            EnableHover="true" AllowSorting="true">
+                        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                        <SfDataManager AdaptorInstance="@typeof(StockRoutineAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+                        <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" ShowConfirmDialog="false" Mode="EditMode.Dialog">
+                            <HeaderTemplate Context="StockHeader">
+                                @{
+                                    var text = GetStockHeader((StockHeader as AStock));
+                                    <span>@text</span>
+                                }
+                            </HeaderTemplate>
+                            <Template>
+                                @{
+                                    var Prod = (context as AStock);
+                                    <div class="form-row">
+                                        <div class="form-group col-md-6">
+                                            <SfTextBox ID="StockProductName" @ref="Prodname" @bind-Value="@(Prod.StockProductName)" Placeholder="Product Name" FloatLabelType="FloatLabelType.Always" Enabled="true"></SfTextBox>
+                                        </div>
+                                        <div class="form-group col-md-6">
+                                            <SfDropDownList ID="UnitId" TItem="AUnit" @bind-Value="@(Prod.UnitId)" TValue="string" DataSource="@units" FloatLabelType="FloatLabelType.Always" Placeholder="Units">
+                                                <DropDownListFieldSettings Value="UnitId" Text="UnitName"></DropDownListFieldSettings>
+                                            </SfDropDownList>
+                                        </div>
+
+                                    </div>
+
+                                }
+                            </Template>
+                        </GridEditSettings>
+                        @* <GridEvents OnActionBegin="DistActionBeginHandler" TValue="District"></GridEvents>*@
+                        <GridColumns>
+                            <GridColumn Field=@nameof(AStock.StockProductId) AllowEditing="false" Visible="false" IsPrimaryKey="true" ShowInColumnChooser="false" HeaderText="Product Code" ValidationRules="@(new ValidationRules {Required = true })" Width="150"></GridColumn>
+                            <GridColumn Field=@nameof(AStock.StockProductName) HeaderText="Product Name" AllowEditing="true" ShowInColumnChooser="true" Width="150"></GridColumn>
+                            <GridColumn Field=@nameof(AStock.UnitId) HeaderText="Measure Unit" TextAlign="TextAlign.Left" Width="150" ForeignKeyField="@nameof(AUnit.UnitId)" ForeignKeyValue="@nameof(AUnit.UnitName)" DataSource="@units"></GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+                }
+            </ContentTemplate>
+        </TabItem>
+        @*MeasurementUnits*@
+        <TabItem>
+            <ChildContent>
+                <TabHeader Text="Measurement Units"></TabHeader>
+            </ChildContent>
+            <ContentTemplate>
+                @{
+                    <SfGrid @ref="UnitGrid" TValue="AUnit" Query="@UnitQuery" GridLines="GridLine.Both"
+                            Toolbar="@(new List<string>() { "Add", "Edit", "Delete", "Update", "Cancel", "ColumnChooser" })" AllowPaging="false" Width="auto" Height="420"
+                            ShowColumnChooser="true" EnableAltRow="true" AllowFiltering="true" AllowTextWrap="true"
+                            EnableHover="true" AllowSorting="true">
+                        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                        <SfDataManager AdaptorInstance="@typeof(UnitRoutineAdapter)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+                        <GridEditSettings AllowAdding="true" AllowDeleting="false" AllowEditing="true" ShowConfirmDialog="false" Mode="EditMode.Dialog">
+                            <HeaderTemplate Context="UnitHeader">
+                                @{
+                                    var text = GetUnitHeader((UnitHeader as AUnit));
+                                    <span>@text</span>
+                                }
+                            </HeaderTemplate>
+                            <Template>
+                                @{
+                                    var Prod = (context as AUnit);
+                                    <div class="form-row">
+                                        <div class="form-group col-md-12">
+                                            <SfTextBox ID="UnitName" @bind-Value="@(Prod.UnitName)" Placeholder="Unit Name" FloatLabelType="FloatLabelType.Always" Enabled="true"></SfTextBox>
+                                        </div>
+                                    </div>
+                                }
+                            </Template>
+                        </GridEditSettings>
+                        @* <GridEvents OnActionBegin="DistActionBeginHandler" TValue="District"></GridEvents>*@
+                        <GridColumns>
+                            <GridColumn Field=@nameof(AUnit.UnitId) AllowEditing="false" Visible="false" IsPrimaryKey="true" ShowInColumnChooser="false" HeaderText="Unit Code" ValidationRules="@(new ValidationRules {Required = true })" Width="150"></GridColumn>
+                            <GridColumn Field=@nameof(AUnit.UnitName) HeaderText="Measurement Unit" AllowEditing="true" ShowInColumnChooser="true" Width="150"></GridColumn>                           
+                        </GridColumns>
+                    </SfGrid>
+                }
+            </ContentTemplate>
+        </TabItem>
+    </TabItems>
+</SfTab>
+
+@code {
+
+    #region Toasters
+    public static string ToastContent { get; set; }
+    SfToast ToastObj;
+    SfToast DeleteToastObj;
+    private string ToastPosition = "Right";
+    private int AlarmTimeout { get; set; } = 120000;
+    private List<ToastModel> Toast = new List<ToastModel>
+{
+        new ToastModel{ Title = "Warning!", Content=ToastContent, CssClass="e-toast-warning", Icon="e-warning toast-icons" },
+        new ToastModel{ Title = "Success!", Content=ToastContent, CssClass="e-toast-success", Icon="e-success toast-icons" },
+        new ToastModel{ Title = "Error!", Content=ToastContent, CssClass="e-toast-danger", Icon="e-error toast-icons" },
+        new ToastModel{ Title = "Information!", Content=ToastContent, CssClass="e-toast-info", Icon="e-info toast-icons" }
+    };
+    #endregion Toasters
+
+    #region TextBoxDeclarations
+
+    public SfTextBox StaffName;
+    public SfTextBox ProductId;
+    public SfTextBox ProductName;
+    public SfTextBox Prodname;
+
+    #endregion TextBoxDeclarations
+
+    #region Queries
+
+    private SfGrid<AStaff> StaffGrid;
+    private SfGrid<AStock> StockProductGrid;
+    private SfGrid<AUnit> UnitGrid;
+
+    public Query StaffQuery = new Query();
+    public Query StockQuery = new Query();
+    public Query UnitQuery = new Query();
+
+    #endregion Queries
+
+    #region DropDowns
+    public static List<AstaffRole> staffroles { get; set; }
+    public static List<Agender> genders { get; set; }
+    public static List<ACountry> countries { get; set; }
+    public static List<AUnit> units { get; set; }
+
+    #endregion DropDowns
+
+    protected override async Task OnInitializedAsync()
+    {
+        staffroles = context.AstaffRoles.ToList();
+        genders = context.Agenders.ToList();
+        countries = context.ACountries.ToList();
+        units = context.AUnits.ToList();
+
+    }
+
+    #region OtherDeclarations
+    public string ButtonText { get; set; }
+
+    private DialogSettings DialogParams = new DialogSettings { MinHeight = "400px", Width = "550px" };
+    public DateTime MinExpiryDate { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
+    public DateTime MinDate { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 15);
+    public DateTime MaxDate { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
+
+    #endregion OtherDeclarations
+
+    #region StaffAdapter
+    public class StaffRoutineAdapter : DataAdaptor
+    {
+        String result = string.Empty;
+        public IJSRuntime jsRuntime;
+        public UserManagement user;
+        public IToastService toastService;
+
+        // Performs BatchUpdate operation
+        public override object BatchUpdate(DataManager dm, object Changed, object Added, object Deleted, string KeyField, string Key, int? dropIndex)
+        {
+            object value = null;
+            if (Changed != null)
+            {
+                value = Changed;
+
+                using (var dbContext = new SalesPurchasesContext())
+                {
+                    foreach (var n in (IEnumerable<AStaff>)Changed)
+                    {
+                        var exists = dbContext.AStaffs.FirstOrDefault(o => o.StaffRoleId == n.StaffRoleId);
+                        if (exists != null)
+                        {
+                            exists.StaffName = n.StaffName;
+                            dbContext.Entry(exists).State = EntityState.Modified;
+                            dbContext.SaveChanges();
+                        }
+                        else
+                        {
+                            AStaff reg = new AStaff();
+                            reg.StaffRoleId = Guid.NewGuid().ToString();
+                            reg.StaffName = n.StaffName;
+                            dbContext.AStaffs.Add(reg);
+                        }
+                        dbContext.SaveChanges();
+                    }
+                }
+            }
+            if (Added != null)
+            {
+                value = Added;
+
+                using (var dbContext = new SalesPurchasesContext())
+                {
+                    foreach (var n in (IEnumerable<AStaff>)Added)
+                    {
+                        var exists = dbContext.AStaffs.FirstOrDefault(o => o.StaffRoleId == n.StaffRoleId);
+                        if (exists == null)
+                        {
+                            AStaff reg = new AStaff();
+                            reg.StaffRoleId = Guid.NewGuid().ToString();
+                            reg.StaffName = n.StaffName;
+                            dbContext.AStaffs.Add(reg);
+                        }
+                        else
+                        {
+                            exists.StaffName = n.StaffName;
+                            dbContext.Entry(exists).State = EntityState.Modified;
+                            dbContext.SaveChanges();
+                        }
+                        dbContext.SaveChanges();
+                    }
+                }
+                //foreach (var rec in (IEnumerable<spView_WebTemplate_ARVGetAll_MA_WFAResult>)Added)
+                //{
+                //    Orders.Add(rec);
+                //}
+
+            }
+            if (Deleted != null)
+            {
+                //foreach (var rec in (IEnumerable<spView_WebTemplate_ARVGetAll_MA_WFAResult>)Deleted)
+                //{
+                //    Orders.Remove(Orders.Where(or => or.OrderID == rec.OrderID).FirstOrDefault());
+                //}
+
+            }
+            return value;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<AStaff>();
+            try
+            {
+                using (var dbContext = new SalesPurchasesContext())
+                {
+                    data = await dbContext.AStaffs.OrderByDescending(o => o.StaffRole).ToListAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<AStaff>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+            using (var dbContext = new SalesPurchasesContext())
+            {
+
+                var val = (value as AStaff);
+
+                AStaff reg = new AStaff();
+
+                reg.StaffId = Guid.NewGuid().ToString();
+                reg.StaffName = val.StaffName;
+                reg.StaffRoleId = val.StaffRoleId;
+                reg.GenderId = val.GenderId;
+                reg.Email = val.Email;
+                reg.Dob = val.Dob;
+                reg.NinNumber = val.NinNumber;
+                reg.Phone = val.Phone;
+                reg.NationalityId = val.NationalityId;
+
+                try
+                {
+                    dbContext.AStaffs.Add(reg);
+                    await dbContext.SaveChangesAsync();
+
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+            }
+
+            return value;
+        }
+
+        public override async Task<object> RemoveAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            int data = (int)value;
+            var val = (value as AStaff);
+            using (var dbContext = new SalesPurchasesContext())
+            {
+                dbContext.AStaffs.Remove(dbContext.AStaffs.FirstOrDefault(o => o.StaffRoleId == val.StaffRoleId));
+                await dbContext.SaveChangesAsync();
+            }
+
+            return value;
+        }
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            using (var dbContext = new SalesPurchasesContext())
+            {
+                var val = (value as AStaff);
+                var exist = dbContext.AStaffs.FirstOrDefault(o => o.StaffRoleId == val.StaffRoleId);
+                if (exist != null)
+                {
+                    dbContext.Entry(exist).CurrentValues.SetValues(value as AStaff);
+                    dbContext.SaveChanges();
+
+                    exist.StaffName = val.StaffName;
+                    //exist.StaffRole = val.StaffRole;
+                    //exist.GenderId = val.GenderId;
+                    //exist.Email = val.Email;
+                    //exist.Dob = val.Dob;
+                    //exist.NationalityId = val.NationalityId;
+                    //exist.Phone = val.Phone;
+
+                    //dbContext.Entry(exist).State = EntityState.Modified;
+                    //await dbContext.SaveChangesAsync();
+                }
+
+            }
+
+            return value;
+        }
+
+    }
+    public string GetStaffHeader(AStaff Value)
+    {
+        if (Value.StaffId == null)
+        {
+            ButtonText = "Insert";
+            return "Add a new Staff";
+        }
+        else
+        {
+            ButtonText = "Save Changes";
+            return "Edit Staff Details for " + Value.StaffName;
+        }
+    }
+    #endregion StaffAdapter
+
+    #region StockProducts
+    public class StockRoutineAdapter : DataAdaptor
+    {
+        String result = string.Empty;
+        public IJSRuntime jsRuntime;
+        public UserManagement user;
+        public IToastService toastService;
+
+        public StockRoutineAdapter(IJSRuntime jSRuntime, UserManagement _user, IToastService ts)
+        {
+            jsRuntime = jSRuntime;
+            user = _user;
+            toastService = ts;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<AStock>();
+            try
+            {
+                using (var dbContext = new SalesPurchasesContext())
+                {
+                    data = await dbContext.AStocks.OrderByDescending(o => o.AddedDate).ToListAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<AStock>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+
+            using (var dbContext = new SalesPurchasesContext())
+            {
+
+                var val = (value as AStock);
+
+                var exist = dbContext.AStocks.FirstOrDefault(o => o.StockProductName == val.StockProductName);
+
+                if (exist != null)
+                {
+                    //Notifies you if what you are entering arleady exists
+                    string result = "This Product ( " + exist.StockProductName + " ) Arleady Exists! Record will not be saved";
+                    toastService.ShowError(result);
+                }
+                else
+                {
+                    AStock reg = new AStock();
+                    AStockLog reglog = new AStockLog();
+
+                    reg.StockProductId = Guid.NewGuid().ToString(); ;
+                    reg.StockProductName = val.StockProductName;
+                    reg.UnitId = val.UnitId;
+                    reg.AddedBy = user.GetStaffName();
+                    reg.AddedDate = DateTime.Now;
+
+                    //Save into Log Table
+                    reglog.StockLogId = Guid.NewGuid().ToString();
+                    reglog.StockProductId = reg.StockProductId;
+                    reglog.StockProductName = val.StockProductName;
+                    reglog.UnitId = val.UnitId;
+                    reglog.AddedBy = user.GetStaffName();
+                    reglog.AddedDate = DateTime.Now;
+
+                    try
+                    {
+                        dbContext.AStocks.Add(reg);
+                        dbContext.AStockLogs.Add(reglog);
+
+                        string result = "Record Saved Successfully";
+                        toastService.ShowInfo(result);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                }
+                await dbContext.SaveChangesAsync();
+            }
+            return value;
+        }
+        public override async Task<object> RemoveAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            int data = (int)value;
+            var val = (value as AStock);
+            using (var dbContext = new SalesPurchasesContext())
+            {
+                dbContext.AStocks.Remove(dbContext.AStocks.FirstOrDefault(o => o.StockProductId == val.StockProductId));
+                await dbContext.SaveChangesAsync();
+            }
+
+            return value;
+        }
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            using (var dbContext = new SalesPurchasesContext())
+            {
+                var val = (value as AStock);
+                var exist = dbContext.AStocks.FirstOrDefault(o => o.StockProductId == val.StockProductId);
+                if (exist != null)
+                {
+                    var existname = dbContext.AStocks.FirstOrDefault(o => o.StockProductName == val.StockProductName);
+                    if (existname!=null)
+                    {
+                        string result = "This Product Arleady Exists! Record will not be saved";
+                        toastService.ShowError(result);
+                    }
+
+                    else {
+                        exist.StockProductName = val.StockProductName;
+
+                        dbContext.Entry(exist).State = EntityState.Modified;
+                        await dbContext.SaveChangesAsync();
+
+                        //Save Into Log Table
+                        AStockLog reglog = new AStockLog();
+
+                        reglog.StockLogId = Guid.NewGuid().ToString();
+                        reglog.StockProductId = exist.StockProductId;
+                        reglog.StockProductName = val.StockProductName;
+                        reglog.UnitId = val.UnitId;
+                        reglog.UpdatedBy = user.GetStaffName();
+                        reglog.UpdatedDate = DateTime.Now;
+
+                        dbContext.AStockLogs.Add(reglog);
+                        dbContext.SaveChanges();
+
+                        string result = "Record Updated Successfully";
+                        toastService.ShowInfo(result);
+                    }
+                }
+
+            }
+
+            return value;
+        }
+    }
+
+    //Customize Dialog Template Header
+    public string GetStockHeader(AStock Value)
+    {
+        if (Value.StockProductName == null)
+        {
+            ButtonText = "Insert";
+            return "Add a new Product";
+        }
+        else
+        {
+            ButtonText = "Save Changes";
+            return "Edit Details of " + Value.StockProductName.ToString();
+        }
+    }
+    #endregion StockProducts
+
+    #region Unit
+    public class UnitRoutineAdapter : DataAdaptor
+    {
+        String result = string.Empty;
+        public IJSRuntime jsRuntime;
+        public UserManagement user;
+        public IToastService toastService;
+
+        public UnitRoutineAdapter(IJSRuntime jSRuntime, UserManagement _user, IToastService ts)
+        {
+            jsRuntime = jSRuntime;
+            user = _user;
+            toastService = ts;
+        }
+
+        public override async Task<Object> ReadAsync(DataManagerRequest dataManagerRequest, string key = null)
+        {
+            var data = new List<AUnit>();
+            try
+            {
+                using (var dbContext = new SalesPurchasesContext())
+                {
+                    //Order By Added Date
+                    data = await dbContext.AUnits.OrderByDescending(o => o.UnitId).ToListAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            IEnumerable GridData = data;
+            int _count = data.Count;
+            if (dataManagerRequest.Search != null && dataManagerRequest.Search.Count > 0)
+            {
+                // Searching
+                GridData = DataOperations.PerformSearching(GridData, dataManagerRequest.Search);
+            }
+            if (dataManagerRequest.Sorted?.Count > 0) // perform Sorting
+            {
+                GridData = DataOperations.PerformSorting(GridData, dataManagerRequest.Sorted);
+            }
+            if (dataManagerRequest.Skip != 0)
+            {
+                GridData = DataOperations.PerformSkip(GridData, dataManagerRequest.Skip); //Paging
+            }
+            if (dataManagerRequest.Take != 0)
+            {
+                GridData = DataOperations.PerformTake(GridData, dataManagerRequest.Take);
+            }
+            IDictionary<string, object> aggregates = new Dictionary<string, object>();
+            if (dataManagerRequest.Aggregates != null) // Aggregation
+            {
+                aggregates = DataUtil.PerformAggregation(GridData, dataManagerRequest.Aggregates);
+            }
+            if (dataManagerRequest.Group != null && dataManagerRequest.Group.Any()) //Grouping
+            {
+                foreach (var group in dataManagerRequest.Group)
+                {
+                    GridData = DataUtil.Group<AUnit>(GridData, group, dataManagerRequest.Aggregates, 0, dataManagerRequest.GroupByFormatter);
+                }
+            }
+            return dataManagerRequest.RequiresCounts ? new DataResult() { Result = GridData, Count = _count, Aggregates = aggregates } : (object)GridData;
+        }
+
+        public override async Task<Object> InsertAsync(DataManager dataManager, object value, string key)
+        {
+
+            using (var dbContext = new SalesPurchasesContext())
+            {
+
+                var val = (value as AUnit);
+
+                var exist = dbContext.AUnits.FirstOrDefault(o => o.UnitName == val.UnitName);
+
+                if (exist != null)
+                {
+                    //Notifies you if what you are entering arleady exists
+                    string result = "The Unit ( " + exist.UnitName + " ) Arleady Exists! Record will not be saved";
+                    toastService.ShowError(result);
+                }
+                else
+                {
+                    AUnit reg = new AUnit();
+
+                    reg.UnitId = Guid.NewGuid().ToString(); ;
+                    reg.UnitName = val.UnitName;
+                    reg.AddedBy = user.GetStaffName();
+                    reg.AddedDate = DateTime.Now;
+
+                    try
+                    {
+                        dbContext.AUnits.Add(reg);
+
+                        string result = "Record Saved Successfully";
+                        toastService.ShowInfo(result);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                }
+                await dbContext.SaveChangesAsync();
+            }
+            return value;
+        }
+        public override async Task<object> RemoveAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            int data = (int)value;
+            var val = (value as AUnit);
+            using (var dbContext = new SalesPurchasesContext())
+            {
+                dbContext.AUnits.Remove(dbContext.AUnits.FirstOrDefault(o => o.UnitId == val.UnitId));
+                await dbContext.SaveChangesAsync();
+            }
+
+            return value;
+        }
+        public override async Task<object> UpdateAsync(DataManager dataManager, object value, string keyField, string key)
+        {
+            using (var dbContext = new SalesPurchasesContext())
+            {
+                var val = (value as AUnit);
+                var exist = dbContext.AUnits.FirstOrDefault(o => o.UnitId == val.UnitId);
+                if (exist != null)
+                {
+                    var existname = dbContext.AUnits.FirstOrDefault(o => o.UnitName == val.UnitName);
+                    if (existname != null)
+                    {
+                        string result = "This Product Arleady Exists! Record will not be saved";
+                        toastService.ShowError(result);
+                    }
+
+                    else
+                    {
+                        exist.UnitName = val.UnitName;
+                        exist.UpdatedBy = user.GetStaffName();
+                        exist.UpdatedDate = DateTime.Now;
+
+                        dbContext.Entry(exist).State = EntityState.Modified;
+                        await dbContext.SaveChangesAsync();
+
+
+                        string result = "Record Updated Successfully";
+                        toastService.ShowInfo(result);
+                    }
+                }
+            }
+            return value;
+        }
+    }
+
+    //Customize Dialog Template Header
+    public string GetUnitHeader(AUnit Value)
+    {
+        if (Value.UnitName == null)
+        {
+            ButtonText = "Insert";
+            return "Add a new Measurement Unit";
+        }
+        else
+        {
+            ButtonText = "Save Changes";
+            return "Edit Details of " + Value.UnitName.ToString();
+        }
+    }
+    #endregion Unit
+}

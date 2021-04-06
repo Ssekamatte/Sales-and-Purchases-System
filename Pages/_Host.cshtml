@@ -1,0 +1,423 @@
+﻿@page "/"
+@namespace Sales.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = null;
+}
+
+@using Sales.Data;
+@inject UserManagement userManagement;
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sales</title>
+
+    <base href="~/" />
+    <link href="_content/Syncfusion.Blazor.Themes/bootstrap4.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link href="css/site.css" rel="stylesheet" />
+    <script src="~/scripts/Alerts.js"></script>
+    @*<link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">*@
+    <link link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.1/css/all.css" integrity="sha384-gfdkjb5BdAXd+lj+gudLWI+BXq4IuLW5IT+brZEZsLFm++aCMlF1V92rMkPaX4PP" crossorigin="anonymous">
+    <link href="_content/Blazored.Toast/blazored-toast.css" rel="stylesheet" />
+    <link href="Sales.styles.css" rel="stylesheet" />
+    <link href="_content/Syncfusion.Blazor/styles/bootstrap4.css" rel="stylesheet" />
+    <script src="~/js/jquery.min.js"></script>
+    <link href="_content/Blazored.Toast/blazored-toast.css" rel="stylesheet" />
+
+</head>
+<body>
+    @*<component type="typeof(App)" render-mode="ServerPrerendered" />*@
+    <environment include="Staging,Production">
+        <component render-mode="ServerPrerendered" type="typeof(App)" />
+    </environment>
+    <environment include="Development">
+        <component render-mode="Server" type="typeof(App)" />
+    </environment>
+
+    <div id="blazor-error-ui">
+        <environment include="Staging,Production">
+            An error has occurred. This application may no longer respond until reloaded.
+        </environment>
+        <environment include="Development">
+            An unhandled exception has occurred. See browser dev tools for details.
+        </environment>
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="_framework/blazor.server.js"></script>
+    <script src="_content/BlazorStrap/blazorStrap.js"></script>
+    <script src="_content/BlazorStrap/popper.min.js"></script>
+    <script src="~/js/jquery.min.js"></script>
+
+    <script type="text/javascript">
+        function saveAsFile(filename, bytesBase64) {
+            if (navigator.msSaveBlob) {
+                //Download document in Edge browser
+                var data = window.atob(bytesBase64);
+                var bytes = new Uint8Array(data.length);
+                for (var i = 0; i < data.length; i++) {
+                    bytes[i] = data.charCodeAt(i);
+                }
+                var blob = new Blob([bytes.buffer], { type: "application/octet-stream" });
+                navigator.msSaveBlob(blob, filename);
+            }
+            else {
+                var link = document.createElement('a');
+                link.download = filename;
+                link.href = "data:application/octet-stream;base64," + bytesBase64;
+                document.body.appendChild(link); // Needed for Firefox
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+    </script>
+    <script>
+        $(function () {
+            $("body").on('click keypress', function () {
+                ResetThisSession();
+            });
+        });
+
+        var timeInSecondsAfterSessionOut = 1200; // change this to change session time out (in seconds).
+        var secondTick = 0;
+
+        function ResetThisSession() {
+            secondTick = 0;
+        }
+
+        function StartThisSessionTimer() {
+            secondTick++;
+            var timeLeft = ((timeInSecondsAfterSessionOut - secondTick) / 60).toFixed(0); // in minutes
+            timeLeft = timeInSecondsAfterSessionOut - secondTick; // override, we have 30 secs only
+
+            //$("#spanTimeLeft").html(timeLeft);
+            //console.log(timeLeft);
+            if (secondTick > timeInSecondsAfterSessionOut) {
+                clearTimeout(tick);
+                window.location = "/";
+                return;
+            }
+            tick = setTimeout("StartThisSessionTimer()", 1000);
+        }
+
+        StartThisSessionTimer();
+    </script>
+    <script>
+        window.Login = (username, password, remeberme) => {
+            var _data = {
+                Email: username,
+                Password: password,
+                RememberMe: remeberme
+            };
+            //alert(window.location.protocol+"//"+window.location.hostname + ":" + window.location.port);
+            //var url = "https://localhost:44356/api/LoginAPI";
+            var url = window.location.protocol + "//" + window.location.hostname + ":" + window.location.port + "/api/LoginAPI";
+            $.ajax({
+                url: url,
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                type: 'POST',
+                data: JSON.stringify(_data),
+                success: function (data) {
+
+                    if (data.succeeded == true) {
+                        window.location = "/Index";
+                    }
+                    else if (data.isLockedOut == true) {
+
+                    }
+                    else if (data.isNotAllowed == true) {
+
+                    }
+                    else if (data.requiresTwoFactor == true) {
+
+                    }
+                    return data;
+                },
+                fail: function (xhr, status, error) {
+                    // error handling
+                    return null;
+                },
+            });
+        };
+        function Logout() {
+            var url = window.location.protocol + "//" + window.location.hostname + ":" + window.location.port + "/api/LoginAPI";
+            $.ajax({
+                url: url,
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                type: 'GET',
+                //data: JSON.stringify(_data),
+                success: function (data) {
+                    window.location = "/";
+                    //return data;
+                },
+                fail: function (xhr, status, error) {
+                    // error handling
+                    alert(status);
+                },
+            });
+        }
+    </script>
+
+    @if (userManagement.IsSignedIn())
+    {
+        <footer>
+            <div class="container body-content" style="margin-right:1px;margin-left:2px;max-width: 98.5%; min-width: 98.5%;">
+                <hr />
+                <p>&copy; @DateTime.Now.Year -Sales System <b style="float:right;"> @String.Format("{0 : dddd, MMMM d, yyyy}", DateTime.Now) </b></p>
+            </div>
+
+        </footer>
+
+    }
+    <script type="text/javascript">
+        function saveAsFile(filename, bytesBase64) {
+            if (navigator.msSaveBlob) {
+                //Download document in Edge browser
+                var data = window.atob(bytesBase64);
+                var bytes = new Uint8Array(data.length);
+                for (var i = 0; i < data.length; i++) {
+                    bytes[i] = data.charCodeAt(i);
+                }
+                var blob = new Blob([bytes.buffer], { type: "application/octet-stream" });
+                navigator.msSaveBlob(blob, filename);
+            }
+            else {
+                var link = document.createElement('a');
+                link.download = filename;
+                link.href = "data:application/octet-stream;base64," + bytesBase64;
+                document.body.appendChild(link); // Needed for Firefox
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+    </script>
+    <script>
+        $(function () {
+            $("body").on('click keypress', function () {
+                ResetThisSession();
+            });
+        });
+
+        var timeInSecondsAfterSessionOut = 1200; // change this to change session time out (in seconds).
+        var secondTick = 0;
+
+        function ResetThisSession() {
+            secondTick = 0;
+        }
+
+        function StartThisSessionTimer() {
+            secondTick++;
+            var timeLeft = ((timeInSecondsAfterSessionOut - secondTick) / 60).toFixed(0); // in minutes
+            timeLeft = timeInSecondsAfterSessionOut - secondTick; // override, we have 30 secs only
+
+            //$("#spanTimeLeft").html(timeLeft);
+            //console.log(timeLeft);
+            if (secondTick > timeInSecondsAfterSessionOut) {
+                clearTimeout(tick);
+                window.location = "/";
+                return;
+            }
+            tick = setTimeout("StartThisSessionTimer()", 1000);
+        }
+
+        StartThisSessionTimer();
+    </script>
+    <script>
+        window.Login = (username, password, remeberme) => {
+            var _data = {
+                Email: username,
+                Password: password,
+                RememberMe: remeberme
+            };
+            //alert(window.location.protocol+"//"+window.location.hostname + ":" + window.location.port);
+            //var url = "https://localhost:44356/api/LoginAPI";
+            var url = window.location.protocol + "//" + window.location.hostname + ":" + window.location.port + "/api/LoginAPI";
+            $.ajax({
+                url: url,
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                type: 'POST',
+                data: JSON.stringify(_data),
+                success: function (data) {
+
+                    if (data.succeeded == true) {
+                        window.location = "/Index";
+                    }
+                    else if (data.isLockedOut == true) {
+
+                    }
+                    else if (data.isNotAllowed == true) {
+
+                    }
+                    else if (data.requiresTwoFactor == true) {
+
+                    }
+                    return data;
+                },
+                fail: function (xhr, status, error) {
+                    // error handling
+                    return null;
+                },
+            });
+        };
+        function Logout() {
+            var url = window.location.protocol + "//" + window.location.hostname + ":" + window.location.port + "/api/LoginAPI";
+            $.ajax({
+                url: url,
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                type: 'GET',
+                //data: JSON.stringify(_data),
+                success: function (data) {
+                    window.location = "/";
+                    //return data;
+                },
+                fail: function (xhr, status, error) {
+                    // error handling
+                    alert(status);
+                },
+            });
+        }
+    </script>
+</body>
+</html>
+
+
+@*header band with logo*@
+<style>
+    .headerband {
+        width: 100%;
+        height: 40px;
+        background-color: brown;
+        padding: 5px;
+        color: white;
+        font-family: Arial;
+        font-size: medium;
+        /*margin-top: 2.33em;
+          margin-bottom: 2.33em;*/
+        /*margin-left: 0.5em;*/
+        /*margin-right: 0;*/
+        /*font-weight: bold;*/
+    }
+</style>
+<style>
+    .headerbandimg {
+        background-image: url(/images/profitlossss.jpg);
+        background-size: 20px;
+        background-repeat: no-repeat;
+        width: 20px;
+        height: 20px;
+        margin-right: 5px;
+        vertical-align: top;
+        display: inline-block;
+    }
+</style>
+<style>
+    /*For Actual Application*/
+    .e-edit-dialog {
+        max-height: 70%;
+        max-width: 70%;
+        min-width: 60%;
+        min-height: 60%;
+    }
+
+    .e-grid .e-control {
+        height: 80%;
+        width: 100%
+    }
+
+    .gridfont, .e-grid .e-headercelldiv {
+        font-size: 14px;
+    }
+
+    .e-grid .e-dialog .gridform .e-rowcell {
+        /*padding: .5em;*/
+        border-bottom: 1px solid #c8c8c8;
+        border-left: 1px solid #c8c8c8;
+        /*font-size: 12px;*/
+    }
+
+    /*Header form Grid*/
+    .e-grid .e-headercell {
+        color: whitesmoke;
+        background-color: darkmagenta;
+        /*font-family: Calibri;*/
+        font-weight: 700;
+        /*min-height:20px;*/
+        font-size: 16px;
+    }
+
+    .e-edit-dialog .e-gridform .e-table {
+        border-collapse: separate;
+        border-spacing: 0px;
+        width: 100%;
+    }
+
+    .e-grid .e-altrow {
+        background-color: #fafafa;
+    }
+
+    /*change SFDialog header color - This1*/
+    .e-dialog.e-control.e-popup, .e-dialog.e-control.e-popup .e-dlg-header-content {
+        /*background-color: #d9edf7;*/
+        background-color: cadetblue;
+    }
+        /*change SFDialog header color - This2*/
+        .e-dialog.e-control.e-popup, .e-dialog.e-control.e-popup .e-dlg-header-content .e-dlg-header {
+            padding: 5px;
+            color: white;
+        }
+
+    .e-dialog .e-footer-content {
+        background-color: #f8f8f8;
+    }
+
+    .e-dialog.e-control.e-popup, .e-dialog.e-control.e-popup .e-dlg-header-content {
+        background-color: cadetblue;
+    }
+
+    .e-dialog.e-control.e-popup {
+        padding: 3px;
+    }
+
+    .e-dialog.e-control .e-dlg-header-content {
+        padding: 5px;
+    }
+
+    .e-dialog.e-control .e-footer-content {
+        padding: 8px 12px;
+    }
+
+
+    .e-dialog.e-control .e-dlg-content {
+        padding: 15px 15px 0px
+    }
+</style>
+<style>
+
+    .e-accordion .e-acrdn-item.e-select.e-selected.e-expand-state > .e-acrdn-header,
+    .e-accordion .e-acrdn-item.e-select.e-expand-state > .e-acrdn-header,
+    .e-accordion .e-acrdn-item.e-select > .e-acrdn-header,
+    .e-accordion .e-acrdn-item.e-select.e-selected > .e-acrdn-header,
+    .e-accordion .e-acrdn-item.e-select.e-selected.e-expand-state > .e-acrdn-header:focus,
+    .e-accordion .e-acrdn-item.e-expand-state.e-select:not(.e-selected) > .e-acrdn-header:focus {
+        background-color: bisque;
+    }
+
+        .e-accordion .e-acrdn-item.e-select.e-selected.e-expand-state > .e-acrdn-header .e-acrdn-header-content,
+        .e-accordion .e-acrdn-item .e-acrdn-header .e-acrdn-header-content,
+        .e-accordion .e-acrdn-item.e-select.e-expand-state > .e-acrdn-header .e-acrdn-header-content,
+        .e-accordion .e-acrdn-item.e-select > .e-acrdn-header:hover,
+        .e-accordion .e-acrdn-item.e-select.e-selected.e-expand-state > .e-acrdn-header > .e-toggle-icon,
+        .e-accordion .e-acrdn-item.e-select.e-expand-state > .e-acrdn-header > .e-toggle-icon,
+        .e-accordion .e-acrdn-item .e-toggle-icon {
+            color: brown;
+        }
+</style> 
